@@ -41,7 +41,7 @@
     display: block;
     font-size: 13px;
     font-weight: 400;
-    color: #6b6b6b;
+    color: #1a1a1a;
     margin-top: 2px;
     letter-spacing: 0;
   }
@@ -200,21 +200,21 @@
   }
 
   .price-current.sale {
-    color: #c62828;
+    color: #1a1a1a;
   }
 
   .price-original {
     font-size: 13px;
     font-weight: 400;
-    color: #999;
+    color: #1a1a1a;
     text-decoration: line-through;
   }
 
   .price-badge {
     font-size: 11px;
     font-weight: 500;
-    color: #c62828;
-    background: #fce4ec;
+    color: #1a1a1a;
+    background: #e8e8e8;
     padding: 2px 6px;
     border-radius: 3px;
     letter-spacing: 0.2px;
@@ -262,7 +262,6 @@
   <div class="carousel-header">
     <h2>
       Recommended for you
-      <span>Based on your browsing history</span>
     </h2>
     <div class="nav-arrows">
       <button class="nav-arrow prev disabled" aria-label="Previous" onclick="scrollCarousel(-1)">
@@ -353,10 +352,10 @@ products.forEach((p, i) => {
       <div class="product-name">${p.name}</div>
       <div class="product-price">
         ${p.salePrice 
-          ? `<span class="price-current sale">$${p.salePrice.toFixed(2)}</span>
-             <span class="price-original">$${p.price.toFixed(2)}</span>
+          ? `<span class="price-current sale">£${p.salePrice.toFixed(2)}</span>
+             <span class="price-original">£${p.price.toFixed(2)}</span>
              <span class="price-badge">-${discount}%</span>`
-          : `<span class="price-current">$${p.price.toFixed(2)}</span>`
+          : `<span class="price-current">£${p.price.toFixed(2)}</span>`
         }
       </div>
     </div>
