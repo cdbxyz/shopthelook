@@ -138,14 +138,7 @@
   pointer-events: none; z-index: 1;
 }
 
-.story-card__accent {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #0b3d91, #c41e3a, #f4c542);
-  z-index: 2;
-}
-.story-card.viewed .story-card__accent { background: #ccc; }
+/* accent bar removed */
 
 .story-card__dots {
   position: absolute;
@@ -606,7 +599,6 @@ STORIES.forEach((story, idx) => {
   card.dataset.index = idx;
   const dotsHTML = story.slides.map(() => `<div class="story-card__dot"></div>`).join('');
   card.innerHTML = `
-    <div class="story-card__accent"></div>
     <div class="story-card__dots">${dotsHTML}</div>
     <div class="story-card__img">
       <img src="${story.thumb}" alt="${story.title}" loading="${idx < 5 ? 'eager' : 'lazy'}">
