@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Stories – Olympic Shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   STORIES COMPONENT — Zalando-style
+   Tall rectangular cards on all devices
+   ============================================================ */
+
+.stories-root, .stories-root *, .stories-root *::before, .stories-root *::after,
+.story-viewer-overlay, .story-viewer-overlay *, .story-viewer-overlay *::before, .story-viewer-overlay *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stories-root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* --- Section header --- */
+.stories-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20px 16px 12px;
+}
+@media (min-width: 768px) {
+  .stories-header { padding: 32px 40px 20px; }
+}
+@media (min-width: 1200px) {
+  .stories-header { padding: 36px 48px 22px; }
+}
+.stories-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #111;
+}
+@media (min-width: 768px) {
+  .stories-header h2 { font-size: 17px; }
+}
+
+/* Mobile circles removed — cards used on all viewports */
+
+/* ============================================================
+   CARD RAIL — Tall rectangular cards on all viewports
+   ============================================================ */
+.stories-rail--desktop {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px 20px;
+  scroll-behavior: smooth;
+}
+.stories-rail--desktop::-webkit-scrollbar { display: none; }
+@media (min-width: 768px) {
+  .stories-rail--desktop {
+    gap: 12px;
+    padding: 0 40px 24px;
+  }
+}
+@media (min-width: 1200px) {
+  .stories-rail--desktop {
+    gap: 14px;
+    padding: 0 48px 28px;
+  }
+}
+
+.story-card {
+  flex: 0 0 auto;
+  position: relative;
+  width: 235px;
+  height: 353px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-user-select: none; user-select: none;
+  background: #f0f0f0;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+@media (min-width: 480px) {
+  .story-card { width: 273px; height: 409px; }
+}
+@media (min-width: 768px) {
+  .story-card { width: 230px; height: 345px; }
+}
+@media (min-width: 1024px) {
+  .story-card { width: 253px; height: 380px; }
+}
+@media (min-width: 1200px) {
+  .story-card { width: 276px; height: 414px; }
+}
+@media (min-width: 1440px) {
+  .story-card { width: 300px; height: 450px; }
+}
+
+.story-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+}
+.story-card:active { transform: scale(0.98); }
+
+.story-card__img {
+  position: absolute; inset: 0;
+}
+.story-card__img img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  transition: transform 0.4s ease;
+}
+.story-card:hover .story-card__img img {
+  transform: scale(1.04);
+}
+
+.story-card__overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.7) 0%,
+    rgba(0,0,0,0.25) 35%,
+    transparent 60%
+  );
+  pointer-events: none; z-index: 1;
+}
+
+.story-card__accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0b3d91, #c41e3a, #f4c542);
+  z-index: 2;
+}
+.story-card.viewed .story-card__accent { background: #ccc; }
+
+.story-card__dots {
+  position: absolute;
+  top: 14px; left: 14px;
+  display: flex; gap: 4px;
+  z-index: 3;
+}
+.story-card__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+}
+.story-card__dot:first-child { background: rgba(255,255,255,0.95); }
+
+.story-card__content {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 16px;
+  z-index: 2;
+}
+.story-card__subtitle {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 4px;
+}
+.story-card__title {
+  font-size: 15px; font-weight: 600;
+  color: #fff; line-height: 1.25;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+@media (min-width: 1200px) {
+  .story-card__title { font-size: 16px; }
+}
+.story-card__count {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 6px;
+}
+
+/* Desktop scroll arrows */
+.stories-rail-wrap {
+  position: relative;
+}
+
+.stories-nav {
+  display: flex;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+}
+.stories-nav--left { left: 8px; }
+.stories-nav--right { right: 8px; }
+@media (min-width: 1200px) {
+  .stories-nav--left { left: 12px; }
+  .stories-nav--right { right: 12px; }
+}
+
+.stories-nav-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%; border: none;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #111;
+  transition: background 0.15s, transform 0.15s, opacity 0.2s;
+  opacity: 0; pointer-events: none;
+}
+.stories-nav-btn.visible {
+  opacity: 1; pointer-events: auto;
+}
+.stories-nav-btn:hover {
+  background: #fff; transform: scale(1.08);
+}
+
+/* ============================================================
+   FULLSCREEN STORY VIEWER
+   ============================================================ */
+.story-viewer-overlay {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  position: fixed; inset: 0;
+  z-index: 999999;
+  background: rgba(0,0,0,0.92);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+.story-viewer-overlay.active { opacity: 1; visibility: visible; }
+
+.story-viewer {
+  position: relative;
+  width: 100%; height: 100%;
+  max-width: 440px; max-height: 100%;
+  overflow: hidden; background: #111;
+}
+@media (min-width: 600px) {
+  .story-viewer {
+    max-height: 92vh;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+}
+
+.story-viewer__media {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #111;
+}
+.story-viewer__media img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+
+.story-viewer__grad-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 160px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+  pointer-events: none; z-index: 2;
+}
+.story-viewer__grad-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 220px;
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
+  pointer-events: none; z-index: 2;
+}
+
+.story-viewer__progress {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; gap: 4px;
+  padding: 12px 12px 0;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  z-index: 10;
+}
+.story-viewer__bar {
+  flex: 1; height: 2.5px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px; overflow: hidden;
+}
+.story-viewer__bar-fill {
+  height: 100%; width: 0%;
+  background: #fff; border-radius: 2px;
+  transition: none;
+}
+.story-viewer__bar.completed .story-viewer__bar-fill { width: 100%; }
+.story-viewer__bar.active .story-viewer__bar-fill { transition: width linear; }
+
+.story-viewer__header {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 28px 14px 0;
+  padding-top: calc(28px + env(safe-area-inset-top, 0px));
+  z-index: 10;
+}
+.story-viewer__avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%; border: 2px solid #fff;
+  overflow: hidden; flex-shrink: 0;
+}
+.story-viewer__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.story-viewer__info { flex: 1; min-width: 0; }
+.story-viewer__title {
+  font-size: 13px; font-weight: 600; color: #fff;
+  line-height: 1.2; text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.story-viewer__time {
+  font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.2;
+}
+
+.story-viewer__close {
+  position: absolute;
+  top: 28px; top: calc(28px + env(safe-area-inset-top, 0px));
+  right: 14px; z-index: 12;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: none; border-radius: 50%;
+  cursor: pointer; color: #fff;
+  font-size: 18px; line-height: 1;
+  transition: background 0.15s;
+}
+.story-viewer__close:hover { background: rgba(0,0,0,0.5); }
+
+.story-viewer__tap-left,
+.story-viewer__tap-right {
+  position: absolute; top: 0; bottom: 0; z-index: 5; cursor: pointer;
+}
+.story-viewer__tap-left { left: 0; width: 35%; }
+.story-viewer__tap-right { right: 0; width: 65%; }
+
+.story-viewer__cta {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.story-viewer__cta-label {
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.story-viewer__cta-product {
+  font-size: 15px; font-weight: 600; color: #fff;
+  line-height: 1.3; text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.story-viewer__cta-price {
+  font-size: 14px; font-weight: 400;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.story-viewer__cta-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; margin-top: 8px;
+  padding: 11px 24px;
+  background: #fff; color: #111;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  border: none; border-radius: 0; cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+  align-self: flex-start;
+}
+.story-viewer__cta-btn:active { transform: scale(0.97); }
+.story-viewer__cta-btn svg { width: 14px; height: 14px; }
+
+.story-viewer__nav-arrow {
+  display: none;
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  z-index: 15;
+  width: 44px; height: 44px;
+  border-radius: 50%; border: none;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: #fff; cursor: pointer;
+  align-items: center; justify-content: center;
+  font-size: 20px; transition: background 0.15s;
+}
+.story-viewer__nav-arrow:hover { background: rgba(255,255,255,0.25); }
+.story-viewer__nav-prev { left: -56px; }
+.story-viewer__nav-next { right: -56px; }
+@media (min-width: 600px) {
+  .story-viewer__nav-arrow { display: flex; }
+}
+
+.story-viewer__spinner {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1;
+}
+.story-viewer__spinner::after {
+  content: '';
+  width: 32px; height: 32px;
+  border: 2.5px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   DEMO PAGE WRAPPER (remove in production)
+   ============================================================ */
+.demo-page {
+  max-width: 100%; min-height: 100vh; background: #fff;
+}
+.demo-placeholder {
+  padding: 40px 20px;
+  text-align: center; color: #bbb;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  border-top: 1px solid #f0f0f0;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-page">
+
+  <!-- ========================================================
+       ★ STORIES COMPONENT — start copy ★
+       ======================================================== -->
+  <div class="stories-root" id="storiesRoot">
+    <div class="stories-header">
+      <h2>The Look Of The Games</h2>
+    </div>
+
+    <!-- Cards rail with scroll arrows -->
+    <div class="stories-rail-wrap">
+      <div class="stories-nav stories-nav--left">
+        <button class="stories-nav-btn" id="railPrev" aria-label="Scroll left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+      </div>
+      <div class="stories-rail--desktop" id="storiesRailDesktop"></div>
+      <div class="stories-nav stories-nav--right">
+        <button class="stories-nav-btn" id="railNext" aria-label="Scroll right">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ★ STORIES COMPONENT — end copy ★ -->
+
+  <div class="demo-placeholder"><p>— Page content continues below —</p></div>
+</div>
+
+<!-- Fullscreen viewer -->
+<div class="story-viewer-overlay" id="storyOverlay">
+  <div class="story-viewer" id="storyViewer">
+    <div class="story-viewer__spinner" id="storySpinner"></div>
+    <div class="story-viewer__media" id="storyMedia">
+      <img id="storyImage" src="" alt="">
+    </div>
+    <div class="story-viewer__grad-top"></div>
+    <div class="story-viewer__grad-bottom"></div>
+    <div class="story-viewer__progress" id="storyProgress"></div>
+    <div class="story-viewer__header">
+      <div class="story-viewer__avatar" id="storyAvatar"><img src="" alt=""></div>
+      <div class="story-viewer__info">
+        <div class="story-viewer__title" id="storyOwner"></div>
+        <div class="story-viewer__time" id="storyTimestamp"></div>
+      </div>
+    </div>
+    <button class="story-viewer__close" id="storyClose" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="story-viewer__tap-left" id="tapLeft"></div>
+    <div class="story-viewer__tap-right" id="tapRight"></div>
+    <div class="story-viewer__cta" id="storyCta"></div>
+    <button class="story-viewer__nav-arrow story-viewer__nav-prev" id="navPrev" aria-label="Previous story">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="story-viewer__nav-arrow story-viewer__nav-next" id="navNext" aria-label="Next story">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STORIES DATA
+   ============================================================ */
+const GH = 'https://raw.githubusercontent.com/cdbxyz/shopthelook/main/';
+
+const STORIES = [
+  {
+    id: 'olympic-jacket',
+    title: 'That Viral Olympic Jacket',
+    subtitle: 'Lookbook',
+    avatar: GH + 'the-olympic-collection-sateen-jacket-off-white_ss5_p-202491285%2Bpv-1%2Bu-nog3mmbcbrl2ic6albvu%2Bv-5idnfw9rcxmszb2a7vps.avif',
+    thumb: GH + 'the-olympic-collection-sateen-jacket-off-white_ss5_p-202491285%2Bpv-1%2Bu-nog3mmbcbrl2ic6albvu%2Bv-5idnfw9rcxmszb2a7vps.avif',
+    slides: [
+      { image: GH + 'the-olympic-collection-sateen-jacket-off-white_ss5_p-202491285%2Bpv-1%2Bu-nog3mmbcbrl2ic6albvu%2Bv-5idnfw9rcxmszb2a7vps.avif', label: 'The Olympic Collection', product: 'Sateen Jacket — Off White', price: '£185.00', cta: 'Shop Now', duration: 6000 },
+      { image: GH + 'edited-image-caimera-cmlmromav09da3onuabcb120o.jpeg', label: 'Style it casual', product: 'Paired with relaxed denim & retro sneakers', price: null, cta: 'Shop the Look', duration: 5000 },
+      { image: GH + 'generated-image-caimera-cmlmrpo7p09db3onub140fd05.png', label: 'Dress it up', product: 'Tailored trousers & a crisp white tee', price: null, cta: 'Shop the Look', duration: 5000 },
+      { image: GH + 'edited-image-caimera-cmlns0ikw0aad3onug3gn9qfv.jpeg', label: 'Street-ready', product: 'Track pants & high-tops for the city', price: null, cta: 'Shop the Look', duration: 5000 },
+      { image: GH + 'generated-image-caimera-cmlns91q50aak3onuayp68xln.jpeg', label: 'Layer it', product: 'Hoodie underneath for cooler evenings', price: null, cta: 'Shop the Look', duration: 5000 },
+      { image: GH + 'images%20(1).jpeg', label: 'Game day', product: 'Match-ready with shorts & team colours', price: null, cta: 'Shop the Look', duration: 5000 }
+    ]
+  },
+  {
+    id: 'ceremony-style',
+    title: 'Ceremony Edit',
+    subtitle: 'Formal wear',
+    avatar: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=120&h=120&fit=crop',
+    thumb: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&h=600&fit=crop',
+    slides: [
+      { image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&h=1200&fit=crop', label: 'Opening Ceremony', product: 'Team GB Ceremony Blazer', price: '£245.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&h=1200&fit=crop', label: 'Podium Ready', product: 'Heritage Knit Polo — Navy', price: '£75.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&h=1200&fit=crop', label: 'Closing Night', product: 'Celebration Bomber Jacket', price: '£165.00', cta: 'Shop Now', duration: 5000 }
+    ]
+  },
+  {
+    id: 'training-kit',
+    title: 'Training Kit',
+    subtitle: 'Performance',
+    avatar: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=120&h=120&fit=crop',
+    thumb: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=600&fit=crop',
+    slides: [
+      { image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&h=1200&fit=crop', label: 'Olympic Training', product: 'Lightweight Running Short', price: '£42.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&h=1200&fit=crop', label: 'Warm Up', product: 'DryFit Quarter-Zip Top', price: '£68.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&h=1200&fit=crop', label: 'Recovery', product: 'Compression Leggings', price: '£55.00', cta: 'Shop Now', duration: 5000 }
+    ]
+  },
+  {
+    id: 'summer-essentials',
+    title: 'Summer Drop',
+    subtitle: 'New in',
+    avatar: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=120&h=120&fit=crop',
+    thumb: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=600&fit=crop',
+    slides: [
+      { image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&h=1200&fit=crop', label: 'Summer Essentials', product: 'Linen Camp Collar Shirt', price: '£58.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1200&fit=crop', label: 'Beat the heat', product: 'Organic Cotton Tee — Ecru', price: '£28.00', cta: 'Shop Now', duration: 5000 }
+    ]
+  },
+  {
+    id: 'new-arrivals',
+    title: 'New Arrivals',
+    subtitle: 'This week',
+    avatar: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop',
+    thumb: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=600&fit=crop',
+    slides: [
+      { image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1200&fit=crop', label: 'Just landed', product: 'Olympic Heritage Track Jacket', price: '£120.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&h=1200&fit=crop', label: 'New in', product: 'Retro Logo Sweatshirt', price: '£85.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1200&fit=crop', label: 'Fresh pick', product: 'Rings Graphic Tee', price: '£35.00', cta: 'Shop Now', duration: 5000 }
+    ]
+  },
+  {
+    id: 'accessories',
+    title: 'Accessories',
+    subtitle: 'Finish the look',
+    avatar: 'https://images.unsplash.com/photo-1556306535-0f09a537f0a3?w=120&h=120&fit=crop',
+    thumb: 'https://images.unsplash.com/photo-1556306535-0f09a537f0a3?w=400&h=600&fit=crop',
+    slides: [
+      { image: 'https://images.unsplash.com/photo-1556306535-0f09a537f0a3?w=800&h=1200&fit=crop', label: 'Complete the look', product: 'Olympic Cap — White/Gold', price: '£32.00', cta: 'Shop Now', duration: 5000 },
+      { image: 'https://images.unsplash.com/photo-1591348278863-a8fb3887e2aa?w=800&h=1200&fit=crop', label: 'Must-have', product: 'Heritage Backpack', price: '£78.00', cta: 'Shop Now', duration: 5000 }
+    ]
+  }
+];
+
+/* ============================================================
+   DOM REFS
+   ============================================================ */
+const railDesktop = document.getElementById('storiesRailDesktop');
+const overlay = document.getElementById('storyOverlay');
+const viewer = document.getElementById('storyViewer');
+const storyImage = document.getElementById('storyImage');
+const storyProgress = document.getElementById('storyProgress');
+const storyAvatarImg = document.querySelector('#storyAvatar img');
+const storyOwner = document.getElementById('storyOwner');
+const storyTimestamp = document.getElementById('storyTimestamp');
+const storyCta = document.getElementById('storyCta');
+const storySpinner = document.getElementById('storySpinner');
+const tapLeft = document.getElementById('tapLeft');
+const tapRight = document.getElementById('tapRight');
+const closeBtn = document.getElementById('storyClose');
+const navPrev = document.getElementById('navPrev');
+const navNext = document.getElementById('navNext');
+const railPrevBtn = document.getElementById('railPrev');
+const railNextBtn = document.getElementById('railNext');
+
+let currentStoryIdx = 0;
+let currentSlideIdx = 0;
+let timer = null;
+let isPaused = false;
+let timerStart = 0;
+let timerRemaining = 0;
+let longPressTimer = null;
+let swipeStartX = 0;
+
+/* ============================================================
+   RENDER BOTH RAILS
+   ============================================================ */
+STORIES.forEach((story, idx) => {
+  const card = document.createElement('div');
+  card.className = 'story-card';
+  card.dataset.index = idx;
+  const dotsHTML = story.slides.map(() => `<div class="story-card__dot"></div>`).join('');
+  card.innerHTML = `
+    <div class="story-card__accent"></div>
+    <div class="story-card__dots">${dotsHTML}</div>
+    <div class="story-card__img">
+      <img src="${story.thumb}" alt="${story.title}" loading="${idx < 5 ? 'eager' : 'lazy'}">
+    </div>
+    <div class="story-card__overlay"></div>
+    <div class="story-card__content">
+      <div class="story-card__subtitle">${story.subtitle}</div>
+      <div class="story-card__title">${story.title}</div>
+      <div class="story-card__count">${story.slides.length} ${story.slides.length === 1 ? 'slide' : 'slides'}</div>
+    </div>
+  `;
+  card.addEventListener('click', () => openStory(idx));
+  railDesktop.appendChild(card);
+});
+
+/* ============================================================
+   DESKTOP RAIL SCROLL ARROWS
+   ============================================================ */
+function updateRailArrows() {
+  const sl = railDesktop.scrollLeft;
+  const maxScroll = railDesktop.scrollWidth - railDesktop.clientWidth;
+  railPrevBtn.classList.toggle('visible', sl > 10);
+  railNextBtn.classList.toggle('visible', sl < maxScroll - 10);
+}
+railDesktop.addEventListener('scroll', updateRailArrows, { passive: true });
+window.addEventListener('resize', updateRailArrows);
+setTimeout(updateRailArrows, 200);
+
+railPrevBtn.addEventListener('click', () => {
+  railDesktop.scrollBy({ left: -railDesktop.clientWidth * 0.75, behavior: 'smooth' });
+});
+railNextBtn.addEventListener('click', () => {
+  railDesktop.scrollBy({ left: railDesktop.clientWidth * 0.75, behavior: 'smooth' });
+});
+
+/* ============================================================
+   VIEWER LOGIC
+   ============================================================ */
+function openStory(storyIdx, slideIdx = 0) {
+  currentStoryIdx = storyIdx;
+  currentSlideIdx = slideIdx;
+  document.body.style.overflow = 'hidden';
+  overlay.classList.add('active');
+  renderSlide();
+}
+
+function closeStory() {
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  clearTimeout(timer);
+  markViewed(currentStoryIdx);
+}
+
+function markViewed(idx) {
+  const card = railDesktop.querySelector(`[data-index="${idx}"]`);
+  if (card) card.classList.add('viewed');
+}
+
+function renderSlide() {
+  const story = STORIES[currentStoryIdx];
+  const slide = story.slides[currentSlideIdx];
+
+  storyAvatarImg.src = story.avatar;
+  storyOwner.textContent = story.title;
+  storyTimestamp.textContent = story.subtitle;
+
+  storyProgress.innerHTML = story.slides.map((_, i) => {
+    let cls = i < currentSlideIdx ? 'completed' : i === currentSlideIdx ? 'active' : '';
+    return `<div class="story-viewer__bar ${cls}"><div class="story-viewer__bar-fill"></div></div>`;
+  }).join('');
+
+  storySpinner.style.display = 'flex';
+  const img = new Image();
+  img.onload = () => {
+    storyImage.src = img.src;
+    storySpinner.style.display = 'none';
+    startTimer(slide.duration || 5000);
+  };
+  img.onerror = () => {
+    storySpinner.style.display = 'none';
+    startTimer(slide.duration || 5000);
+  };
+  img.src = slide.image;
+  if (img.complete) {
+    storyImage.src = img.src;
+    storySpinner.style.display = 'none';
+  }
+
+  let h = '';
+  if (slide.label)   h += `<div class="story-viewer__cta-label">${slide.label}</div>`;
+  if (slide.product) h += `<div class="story-viewer__cta-product">${slide.product}</div>`;
+  if (slide.price)   h += `<div class="story-viewer__cta-price">${slide.price}</div>`;
+  if (slide.cta)     h += `<button class="story-viewer__cta-btn">${slide.cta}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`;
+  storyCta.innerHTML = h;
+
+  preloadNext();
+}
+
+function startTimer(duration) {
+  clearTimeout(timer);
+  timerRemaining = duration;
+  timerStart = Date.now();
+  const fill = storyProgress.querySelector('.story-viewer__bar.active .story-viewer__bar-fill');
+  if (fill) {
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    fill.offsetWidth;
+    fill.style.transition = `width ${duration}ms linear`;
+    fill.style.width = '100%';
+  }
+  timer = setTimeout(goNext, duration);
+}
+
+function pauseTimer() {
+  if (isPaused) return;
+  isPaused = true;
+  clearTimeout(timer);
+  timerRemaining -= (Date.now() - timerStart);
+  const fill = storyProgress.querySelector('.story-viewer__bar.active .story-viewer__bar-fill');
+  if (fill) {
+    const w = getComputedStyle(fill).width;
+    fill.style.transition = 'none';
+    fill.style.width = w;
+  }
+}
+
+function resumeTimer() {
+  if (!isPaused) return;
+  isPaused = false;
+  const fill = storyProgress.querySelector('.story-viewer__bar.active .story-viewer__bar-fill');
+  if (fill) {
+    fill.offsetWidth;
+    fill.style.transition = `width ${timerRemaining}ms linear`;
+    fill.style.width = '100%';
+  }
+  timerStart = Date.now();
+  timer = setTimeout(goNext, timerRemaining);
+}
+
+function goNext() {
+  clearTimeout(timer);
+  const story = STORIES[currentStoryIdx];
+  if (currentSlideIdx < story.slides.length - 1) {
+    currentSlideIdx++;
+    renderSlide();
+  } else if (currentStoryIdx < STORIES.length - 1) {
+    markViewed(currentStoryIdx);
+    currentStoryIdx++;
+    currentSlideIdx = 0;
+    renderSlide();
+  } else {
+    closeStory();
+  }
+}
+
+function goPrev() {
+  clearTimeout(timer);
+  if (currentSlideIdx > 0) {
+    currentSlideIdx--;
+    renderSlide();
+  } else if (currentStoryIdx > 0) {
+    currentStoryIdx--;
+    currentSlideIdx = STORIES[currentStoryIdx].slides.length - 1;
+    renderSlide();
+  } else {
+    currentSlideIdx = 0;
+    renderSlide();
+  }
+}
+
+function preloadNext() {
+  const story = STORIES[currentStoryIdx];
+  let src = null;
+  if (currentSlideIdx < story.slides.length - 1)
+    src = story.slides[currentSlideIdx + 1].image;
+  else if (currentStoryIdx < STORIES.length - 1)
+    src = STORIES[currentStoryIdx + 1].slides[0].image;
+  if (src) { const img = new Image(); img.src = src; }
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+closeBtn.addEventListener('click', e => { e.stopPropagation(); closeStory(); });
+navNext.addEventListener('click', e => { e.stopPropagation(); goNext(); });
+navPrev.addEventListener('click', e => { e.stopPropagation(); goPrev(); });
+tapRight.addEventListener('click', goNext);
+tapLeft.addEventListener('click', goPrev);
+
+viewer.addEventListener('touchstart', () => {
+  longPressTimer = setTimeout(pauseTimer, 200);
+}, { passive: true });
+viewer.addEventListener('touchend', () => {
+  clearTimeout(longPressTimer);
+  if (isPaused) resumeTimer();
+}, { passive: true });
+viewer.addEventListener('touchmove', () => {
+  clearTimeout(longPressTimer);
+}, { passive: true });
+
+overlay.addEventListener('touchstart', e => { swipeStartX = e.touches[0].clientX; }, { passive: true });
+overlay.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  if (Math.abs(dx) > 60) { dx < 0 ? goNext() : goPrev(); }
+}, { passive: true });
+
+viewer.addEventListener('mousedown', e => {
+  if (e.target.closest('.story-viewer__close, .story-viewer__cta-btn, .story-viewer__nav-arrow')) return;
+  longPressTimer = setTimeout(pauseTimer, 200);
+});
+viewer.addEventListener('mouseup', () => {
+  clearTimeout(longPressTimer);
+  if (isPaused) resumeTimer();
+});
+
+document.addEventListener('keydown', e => {
+  if (!overlay.classList.contains('active')) return;
+  if (e.key === 'ArrowRight') goNext();
+  else if (e.key === 'ArrowLeft') goPrev();
+  else if (e.key === 'Escape') closeStory();
+});
+
+overlay.addEventListener('click', e => { if (e.target === overlay) closeStory(); });
+</script>
+</body>
+</html>
