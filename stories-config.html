@@ -427,7 +427,13 @@ async function ghApiFetch(path, opts = {}) {
 async function uploadToGitHub(file) {
   const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
   const filePath = ghConfig.path ? ghConfig.path + '/' + file.name : file.name;
-  let sha; try { const ex = await ghApiFetch('contents/' + encodeURIComponent(filePath) + '?ref=' + (ghConfig.branch || 'main')); sha = ex.sha; } catch(e) {}
+  let sha;
+  try {
+    const shaResp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/contents/' + encodeURIComponent(filePath) + '?ref=' + (ghConfig.branch || 'main'), {
+      headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (shaResp.ok) { const shaData = await shaResp.json(); sha = shaData.sha; }
+  } catch(e) {}
   const body = { message: 'Upload ' + file.name, content: base64, branch: ghConfig.branch || 'main' };
   if (sha) body.sha = sha;
   const data = await ghApiFetch('contents/' + encodeURIComponent(filePath), { method: 'PUT', body: JSON.stringify(body) });
@@ -469,7 +475,14 @@ async function publishToGitHub() {
     }
     const html = buildFullHtml(repoHtmlRaw);
     const base64 = btoa(unescape(encodeURIComponent(html)));
-    let sha; try { const ex = await ghApiFetch('contents/stories.html?ref=' + (ghConfig.branch || 'main')); sha = ex.sha; } catch(e) {}
+    // Get SHA of existing file (required for updates)
+    let sha;
+    try {
+      const shaResp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + (ghConfig.branch || 'main'), {
+        headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (shaResp.ok) { const shaData = await shaResp.json(); sha = shaData.sha; }
+    } catch(e) { console.warn('SHA fetch:', e); }
     const body = { message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch: ghConfig.branch || 'main' };
     if (sha) body.sha = sha;
     await ghApiFetch('contents/stories.html', { method: 'PUT', body: JSON.stringify(body) });
