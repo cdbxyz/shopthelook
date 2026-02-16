@@ -487,58 +487,33 @@ async function publishToGitHub() {
   btn.innerHTML = '<span class="spinner"></span> Publishing...'; btn.disabled = true;
   try {
     const branch = ghConfig.branch || 'main';
-    const baseUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
-    const authHeader = { 'Authorization': 'Bearer ' + ghConfig.token };
+    const apiUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
+    const headers = { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
 
-    // If we don't have the template yet, fetch it
+    // If we don't have the template, fetch it
     if (!repoHtmlRaw) {
-      const metaResp = await fetch(baseUrl + '?ref=' + branch, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
-      if (metaResp.ok) {
-        const metaData = await metaResp.json();
-        repoFileSha = metaData.sha;
-        if (metaData.content) {
-          repoHtmlRaw = decodeURIComponent(escape(atob(metaData.content.replace(/\n/g, ''))));
-        }
-      }
-      if (!repoHtmlRaw) throw new Error('stories.html not found in repo — push one first');
+      const rawResp = await fetch(apiUrl + '?ref=' + branch, { headers: { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3.raw' } });
+      if (rawResp.ok) repoHtmlRaw = await rawResp.text();
+      else throw new Error('stories.html not found in repo — push one first');
     }
-
-    // If we still don't have SHA, fetch it now
-    if (!repoFileSha) {
-      const shaResp = await fetch(baseUrl + '?ref=' + branch, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
-      if (shaResp.ok) {
-        const shaData = await shaResp.json();
-        repoFileSha = shaData.sha;
-      }
-    }
-
-    console.log('Publishing with SHA:', repoFileSha);
 
     const html = buildFullHtml(repoHtmlRaw);
     const base64 = btoa(unescape(encodeURIComponent(html)));
-    const body = { message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch: branch };
-    if (repoFileSha) body.sha = repoFileSha;
 
-    // PUT the file
-    const putResp = await fetch(baseUrl, {
-      method: 'PUT',
-      headers: { ...authHeader, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!putResp.ok) {
-      const errData = await putResp.json().catch(() => ({}));
-      throw new Error(errData.message || 'HTTP ' + putResp.status);
+    // Step 1: Delete existing file (need SHA first)
+    const metaResp = await fetch(apiUrl + '?ref=' + branch, { headers });
+    if (metaResp.ok) {
+      const meta = await metaResp.json();
+      await fetch(apiUrl, { method: 'DELETE', headers, body: JSON.stringify({ message: 'Remove stories.html for update', sha: meta.sha, branch }) });
     }
 
-    // Update SHA from response for next publish
-    const result = await putResp.json();
-    repoFileSha = result.content.sha;
-    repoHtmlRaw = html; // template is now what we just published
-    console.log('Published OK, new SHA:', repoFileSha);
+    // Step 2: Create fresh file
+    const createResp = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify({ message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch }) });
+    if (!createResp.ok) { const err = await createResp.json().catch(() => ({})); throw new Error(err.message || 'HTTP ' + createResp.status); }
 
+    repoHtmlRaw = html;
     showToast('Published stories.html ✓');
-  } catch(e) { showToast('Publish failed: ' + e.message, 'error'); console.error('Publish error:', e); }
+  } catch(e) { showToast('Publish failed: ' + e.message, 'error'); console.error(e); }
   btn.innerHTML = orig; btn.disabled = false;
 }
 
