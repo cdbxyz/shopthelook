@@ -232,31 +232,14 @@ function parseStoriesHtml(html) {
 async function fetchStoriesFromRepo() {
   if (!ghConfig) return null;
   try {
-    setLoading(20);
-    const branch = ghConfig.branch || 'main';
-    const baseUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + branch;
-    const authHeader = { 'Authorization': 'Bearer ' + ghConfig.token };
-
-    // Step 1: Get file metadata (JSON) to capture SHA
     setLoading(30);
-    const metaResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
-    if (!metaResp.ok) { console.warn('Meta fetch failed:', metaResp.status); return null; }
-    const metaData = await metaResp.json();
-    repoFileSha = metaData.sha;
-    console.log('Got file SHA:', repoFileSha);
-
-    // Step 2: Decode content from the same response (base64 encoded)
-    setLoading(60);
-    let html;
-    if (metaData.content) {
-      html = decodeURIComponent(escape(atob(metaData.content.replace(/\n/g, ''))));
-    } else {
-      // Fallback: fetch raw if content wasn't included (file >1MB)
-      const rawResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3.raw' } });
-      if (!rawResp.ok) return null;
-      html = await rawResp.text();
-    }
-
+    const branch = ghConfig.branch || 'main';
+    // Use raw.githubusercontent.com — no API auth needed, no JSON parsing, just the file
+    const rawUrl = 'https://raw.githubusercontent.com/' + ghConfig.repo + '/' + branch + '/stories.html?t=' + Date.now();
+    const resp = await fetch(rawUrl);
+    setLoading(70);
+    if (!resp.ok) { console.warn('Raw fetch failed:', resp.status); return null; }
+    const html = await resp.text();
     repoHtmlRaw = html;
     setLoading(90);
     return parseStoriesHtml(html);
@@ -487,12 +470,13 @@ async function publishToGitHub() {
   btn.innerHTML = '<span class="spinner"></span> Publishing...'; btn.disabled = true;
   try {
     const branch = ghConfig.branch || 'main';
-    const apiUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
+    const contentsUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
     const headers = { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
 
-    // If we don't have the template, fetch it
+    // If we don't have the template, fetch via raw URL
     if (!repoHtmlRaw) {
-      const rawResp = await fetch(apiUrl + '?ref=' + branch, { headers: { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3.raw' } });
+      const rawUrl = 'https://raw.githubusercontent.com/' + ghConfig.repo + '/' + branch + '/stories.html?t=' + Date.now();
+      const rawResp = await fetch(rawUrl);
       if (rawResp.ok) repoHtmlRaw = await rawResp.text();
       else throw new Error('stories.html not found in repo — push one first');
     }
@@ -500,16 +484,34 @@ async function publishToGitHub() {
     const html = buildFullHtml(repoHtmlRaw);
     const base64 = btoa(unescape(encodeURIComponent(html)));
 
-    // Step 1: Delete existing file (need SHA first)
-    const metaResp = await fetch(apiUrl + '?ref=' + branch, { headers });
-    if (metaResp.ok) {
-      const meta = await metaResp.json();
-      await fetch(apiUrl, { method: 'DELETE', headers, body: JSON.stringify({ message: 'Remove stories.html for update', sha: meta.sha, branch }) });
-    }
+    // Step 1: Try to get SHA and delete existing file
+    try {
+      const metaResp = await fetch(contentsUrl + '?ref=' + branch, { headers });
+      if (metaResp.ok) {
+        const text = await metaResp.text();
+        try {
+          const meta = JSON.parse(text);
+          if (meta.sha) {
+            await fetch(contentsUrl, { method: 'DELETE', headers, body: JSON.stringify({ message: 'Remove for update', sha: meta.sha, branch }) });
+            // Small delay to let GitHub process the delete
+            await new Promise(r => setTimeout(r, 500));
+          }
+        } catch(parseErr) { console.warn('Meta response not JSON, skipping delete'); }
+      }
+    } catch(delErr) { console.warn('Delete step failed, trying create anyway:', delErr); }
 
-    // Step 2: Create fresh file
-    const createResp = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify({ message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch }) });
-    if (!createResp.ok) { const err = await createResp.json().catch(() => ({})); throw new Error(err.message || 'HTTP ' + createResp.status); }
+    // Step 2: Create the file fresh
+    const createResp = await fetch(contentsUrl, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch })
+    });
+
+    const respText = await createResp.text();
+    if (!createResp.ok) {
+      let errMsg = 'HTTP ' + createResp.status;
+      try { errMsg = JSON.parse(respText).message; } catch(e) {}
+      throw new Error(errMsg);
+    }
 
     repoHtmlRaw = html;
     showToast('Published stories.html ✓');
