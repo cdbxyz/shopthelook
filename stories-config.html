@@ -185,6 +185,7 @@ let activeStoryIdx = -1;
 let editingPaneIdx = -1;
 let globalHeading = 'The Look Of The Games';
 let repoHtmlRaw = null;
+let repoFileSha = null;
 let ghConfig = JSON.parse(localStorage.getItem('ghConfig') || 'null');
 
 const $ = id => document.getElementById(id);
@@ -231,14 +232,31 @@ function parseStoriesHtml(html) {
 async function fetchStoriesFromRepo() {
   if (!ghConfig) return null;
   try {
+    setLoading(20);
+    const branch = ghConfig.branch || 'main';
+    const baseUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + branch;
+    const authHeader = { 'Authorization': 'Bearer ' + ghConfig.token };
+
+    // Step 1: Get file metadata (JSON) to capture SHA
     setLoading(30);
-    const resp = await fetch(
-      'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + (ghConfig.branch || 'main'),
-      { headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3.raw' } }
-    );
-    setLoading(70);
-    if (!resp.ok) return null;
-    const html = await resp.text();
+    const metaResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
+    if (!metaResp.ok) { console.warn('Meta fetch failed:', metaResp.status); return null; }
+    const metaData = await metaResp.json();
+    repoFileSha = metaData.sha;
+    console.log('Got file SHA:', repoFileSha);
+
+    // Step 2: Decode content from the same response (base64 encoded)
+    setLoading(60);
+    let html;
+    if (metaData.content) {
+      html = decodeURIComponent(escape(atob(metaData.content.replace(/\n/g, ''))));
+    } else {
+      // Fallback: fetch raw if content wasn't included (file >1MB)
+      const rawResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3.raw' } });
+      if (!rawResp.ok) return null;
+      html = await rawResp.text();
+    }
+
     repoHtmlRaw = html;
     setLoading(90);
     return parseStoriesHtml(html);
@@ -468,26 +486,59 @@ async function publishToGitHub() {
   const btn = $('publishBtn'), orig = btn.innerHTML;
   btn.innerHTML = '<span class="spinner"></span> Publishing...'; btn.disabled = true;
   try {
+    const branch = ghConfig.branch || 'main';
+    const baseUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
+    const authHeader = { 'Authorization': 'Bearer ' + ghConfig.token };
+
+    // If we don't have the template yet, fetch it
     if (!repoHtmlRaw) {
-      const resp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + (ghConfig.branch || 'main'), { headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3.raw' } });
-      if (resp.ok) repoHtmlRaw = await resp.text();
-      else throw new Error('stories.html not found in repo');
+      const metaResp = await fetch(baseUrl + '?ref=' + branch, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
+      if (metaResp.ok) {
+        const metaData = await metaResp.json();
+        repoFileSha = metaData.sha;
+        if (metaData.content) {
+          repoHtmlRaw = decodeURIComponent(escape(atob(metaData.content.replace(/\n/g, ''))));
+        }
+      }
+      if (!repoHtmlRaw) throw new Error('stories.html not found in repo — push one first');
     }
+
+    // If we still don't have SHA, fetch it now
+    if (!repoFileSha) {
+      const shaResp = await fetch(baseUrl + '?ref=' + branch, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
+      if (shaResp.ok) {
+        const shaData = await shaResp.json();
+        repoFileSha = shaData.sha;
+      }
+    }
+
+    console.log('Publishing with SHA:', repoFileSha);
+
     const html = buildFullHtml(repoHtmlRaw);
     const base64 = btoa(unescape(encodeURIComponent(html)));
-    // Get SHA of existing file (required for updates)
-    let sha;
-    try {
-      const shaResp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + (ghConfig.branch || 'main'), {
-        headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json' }
-      });
-      if (shaResp.ok) { const shaData = await shaResp.json(); sha = shaData.sha; }
-    } catch(e) { console.warn('SHA fetch:', e); }
-    const body = { message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch: ghConfig.branch || 'main' };
-    if (sha) body.sha = sha;
-    await ghApiFetch('contents/stories.html', { method: 'PUT', body: JSON.stringify(body) });
+    const body = { message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch: branch };
+    if (repoFileSha) body.sha = repoFileSha;
+
+    // PUT the file
+    const putResp = await fetch(baseUrl, {
+      method: 'PUT',
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!putResp.ok) {
+      const errData = await putResp.json().catch(() => ({}));
+      throw new Error(errData.message || 'HTTP ' + putResp.status);
+    }
+
+    // Update SHA from response for next publish
+    const result = await putResp.json();
+    repoFileSha = result.content.sha;
+    repoHtmlRaw = html; // template is now what we just published
+    console.log('Published OK, new SHA:', repoFileSha);
+
     showToast('Published stories.html ✓');
-  } catch(e) { showToast('Publish failed: ' + e.message, 'error'); }
+  } catch(e) { showToast('Publish failed: ' + e.message, 'error'); console.error('Publish error:', e); }
   btn.innerHTML = orig; btn.disabled = false;
 }
 
@@ -514,7 +565,7 @@ async function saveGhSettings() {
   } else { showToast('Connected but no stories.html found', 'info'); }
   setLoading(100); setTimeout(() => loadBar.style.display = 'none', 400);
 }
-function disconnectGh() { ghConfig = null; repoHtmlRaw = null; localStorage.removeItem('ghConfig'); updateGhBar(); closeGhModal(); showToast('Disconnected'); }
+function disconnectGh() { ghConfig = null; repoHtmlRaw = null; repoFileSha = null; localStorage.removeItem('ghConfig'); updateGhBar(); closeGhModal(); showToast('Disconnected'); }
 function updateGhBar() { const c = !!ghConfig; $('ghDot').className = 'dot' + (c ? ' connected' : ''); $('ghLabel').textContent = c ? ghConfig.repo : 'GitHub not connected'; }
 
 // ─── Export / Import ───
