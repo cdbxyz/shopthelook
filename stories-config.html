@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stories — Configuration Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff;
+  --bg-raised: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f7f7f8;
+  --bg-hover: #f0f0f3;
+  --border: #e2e3e8;
+  --border-focus: #5b6aff;
+  --text: #111218;
+  --text-muted: #6b7086;
+  --text-dim: #9ca0b4;
+  --accent: #5b6aff;
+  --accent-hover: #4a58e0;
+  --accent-bg: rgba(91,106,255,0.07);
+  --danger: #e5484d;
+  --danger-bg: rgba(229,72,77,0.07);
+  --success: #30a46c;
+  --success-bg: rgba(48,164,108,0.07);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  --font: 'DM Sans', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+html, body { height: 100%; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); overflow: hidden; font-size: 14px; line-height: 1.5; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d5db; border-radius: 3px; }
+.app { display: flex; height: 100vh; }
+.sidebar { width: 280px; min-width: 280px; background: var(--bg-raised); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo { display: flex; align-items: center; gap: 10px; }
+.sidebar-logo svg { width: 24px; height: 24px; color: var(--accent); }
+.sidebar-logo span { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+.sidebar-logo .badge { font-size: 10px; font-weight: 600; color: var(--accent); background: var(--accent-bg); padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.global-config { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.global-config label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.global-config input, .field input, .field select, .field textarea { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 9px 12px; font-family: var(--font); font-size: 13px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+.global-config input:focus, .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-bg); }
+.story-list-header { padding: 14px 20px 6px; display: flex; align-items: center; justify-content: space-between; }
+.story-list-header h3 { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.story-list { flex: 1; overflow-y: auto; padding: 4px 12px 12px; }
+.story-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s; border: 2px solid transparent; margin-bottom: 2px; user-select: none; }
+.story-item:hover { background: var(--bg-hover); }
+.story-item.active { background: var(--accent-bg); border-color: rgba(91,106,255,0.18); }
+.story-item.drag-over-above { border-top-color: var(--accent); }
+.story-item.drag-over-below { border-bottom-color: var(--accent); }
+.story-item.dragging { opacity: 0.35; }
+.story-item-thumb { width: 34px; height: 46px; border-radius: 4px; object-fit: cover; background: var(--bg-input); flex-shrink: 0; }
+.story-item-info { flex: 1; min-width: 0; }
+.story-item-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.story-item-meta { font-size: 11px; color: var(--text-muted); }
+.story-item-drag { color: var(--text-dim); cursor: grab; flex-shrink: 0; padding: 4px; border-radius: 4px; }
+.story-item-drag:hover { background: var(--bg-input); color: var(--text-muted); }
+.story-item-drag:active { cursor: grabbing; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: none; border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-ghost { background: transparent; color: var(--text-muted); padding: 6px 8px; }
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text); }
+.btn-outline { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--text-dim); background: var(--bg-hover); }
+.btn-danger { background: var(--danger-bg); color: var(--danger); }
+.btn-danger:hover { background: rgba(229,72,77,0.13); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-icon { padding: 6px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
+.btn-icon:hover { background: var(--bg-hover); color: var(--text); }
+.btn-icon svg { width: 18px; height: 18px; }
+.main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.main-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--bg-raised); min-height: 56px; }
+.main-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.main-header-actions { display: flex; gap: 8px; align-items: center; }
+.main-content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; gap: 12px; }
+.empty-state svg { width: 48px; height: 48px; color: var(--text-dim); }
+.empty-state h3 { font-size: 18px; color: var(--text); font-weight: 600; }
+.empty-state p { max-width: 360px; font-size: 14px; line-height: 1.6; }
+.editor-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
+.editor-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.editor-section h3 { font-size: 14px; font-weight: 700; }
+.editor-section h3 .count { font-weight: 500; color: var(--text-muted); font-size: 12px; margin-left: 8px; }
+.field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.field-group.full { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.field .hint { font-size: 11px; color: var(--text-dim); }
+.field .hint a { color: var(--accent); text-decoration: none; }
+.pane-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-top: 16px; }
+.pane-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: all 0.2s; position: relative; user-select: none; }
+.pane-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.pane-card.dragging { opacity: 0.3; transform: scale(0.96); }
+.pane-card.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.pane-card-media { width: 100%; aspect-ratio: 9/16; object-fit: cover; background: #eef0f3; display: block; }
+.pane-card-video-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.pane-card-info { padding: 10px 12px; }
+.pane-card-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-card-number { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.pane-card-actions { position: absolute; bottom: 58px; right: 6px; display: flex; flex-direction: column; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+.pane-card:hover .pane-card-actions { opacity: 1; }
+.pane-action-btn { width: 28px; height: 28px; border-radius: 6px; background: rgba(0,0,0,0.6); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.pane-action-btn:hover { background: var(--accent); }
+.pane-action-btn svg { width: 14px; height: 14px; }
+.pane-add-card { background: transparent; border: 2px dashed var(--border); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; aspect-ratio: 9/16; color: var(--text-dim); font-size: 13px; font-weight: 600; }
+.pane-add-card:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.pane-add-card svg { width: 28px; height: 28px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.18); backdrop-filter: blur(3px); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; width: 580px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); transform: translateY(10px); transition: transform 0.2s; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 16px; font-weight: 700; }
+.modal-body { padding: 20px 24px 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; }
+.modal-footer-right { display: flex; gap: 8px; }
+.upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 12px; }
+.upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: var(--accent-bg); }
+.upload-area svg { width: 36px; height: 36px; color: var(--text-dim); margin-bottom: 8px; }
+.upload-area p { color: var(--text-muted); font-size: 13px; }
+.upload-area .or { color: var(--text-dim); font-size: 12px; margin: 10px 0; display: block; }
+.upload-preview { position: relative; margin-bottom: 16px; border-radius: var(--radius); overflow: hidden; background: var(--bg-input); }
+.upload-preview img, .upload-preview video { width: 100%; max-height: 220px; object-fit: contain; display: block; }
+.upload-preview .remove-preview { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.tabs { display: flex; gap: 2px; background: var(--bg-input); padding: 3px; border-radius: var(--radius-sm); margin-bottom: 16px; }
+.tab { flex: 1; padding: 7px 14px; border: none; background: transparent; color: var(--text-muted); font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+.tab.active { background: var(--bg-card); color: var(--text); box-shadow: var(--shadow-sm); }
+.github-bar { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--bg-input); }
+.github-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+.github-bar .dot.connected { background: var(--success); }
+.github-bar .gh-label { font-size: 12px; color: var(--text-muted); flex: 1; }
+.gh-fields { display: flex; flex-direction: column; gap: 14px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 2000; transform: translateY(80px); opacity: 0; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-left: 3px solid var(--success); color: var(--success); }
+.toast.error { border-left: 3px solid var(--danger); color: var(--danger); }
+.toast.info { border-left: 3px solid var(--accent); color: var(--accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+.loading-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); z-index: 3000; transition: width 0.3s; }
+@media (max-width: 768px) { .sidebar { display: none; } .pane-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="loading-bar" id="loadingBar" style="width:0%;"></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Stories</span><span class="badge">Config</span></div></div>
+    <div class="global-config"><label>Section Heading</label><input type="text" id="globalHeading" value="" placeholder="e.g. Stories, Featured Looks"></div>
+    <div class="story-list-header"><h3>Stories</h3><button class="btn btn-ghost btn-sm" id="addStoryBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button></div>
+    <div class="story-list" id="storyList"></div>
+    <div class="github-bar"><span class="dot" id="ghDot"></span><span class="gh-label" id="ghLabel">GitHub not connected</span><button class="btn btn-ghost btn-sm" id="ghSettingsBtn">Setup</button></div>
+  </aside>
+  <main class="main-panel">
+    <div class="main-header"><h2 id="mainTitle">Stories Configurator</h2><div class="main-header-actions"><button class="btn btn-outline btn-sm" id="importBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Import</button><button class="btn btn-outline btn-sm" id="exportJsonBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button><button class="btn btn-primary" id="publishBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Publish to GitHub</button></div></div>
+    <div class="main-content" id="mainContent">
+      <div class="empty-state" id="emptyState"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><h3>Select a story to edit</h3><p>Choose a story from the sidebar, or create a new one.</p><button class="btn btn-primary" id="emptyAddBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create first story</button></div>
+      <div id="editorArea" style="display:none;"></div>
+    </div>
+  </main>
+</div>
+<div class="modal-overlay" id="paneModal"><div class="modal"><div class="modal-header"><h3 id="paneModalTitle">Edit Pane</h3><button class="btn-icon" id="closePaneModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="modal-body" id="paneModalBody"></div><div class="modal-footer"><div><button class="btn btn-danger btn-sm" id="deletePaneBtn" style="display:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete Pane</button></div><div class="modal-footer-right"><button class="btn btn-ghost" id="cancelPaneBtn">Cancel</button><button class="btn btn-primary" id="savePaneBtn">Save Pane</button></div></div></div></div>
+<div class="modal-overlay" id="ghModal"><div class="modal"><div class="modal-header"><h3>GitHub Repository Settings</h3><button class="btn-icon" id="closeGhModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="modal-body"><p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Connect a GitHub repository to upload media and publish stories.html directly.</p><div class="gh-fields"><div class="field"><label>Personal Access Token</label><input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"><span class="hint">Needs <code>repo</code> scope. <a href="https://github.com/settings/tokens/new" target="_blank">Generate one &rarr;</a></span></div><div class="field"><label>Repository (owner/name)</label><input type="text" id="ghRepo" placeholder="e.g. cdbxyz/shopthelook"></div><div class="field"><label>Branch</label><input type="text" id="ghBranch" value="main" placeholder="main"></div><div class="field"><label>Media Upload Path (optional)</label><input type="text" id="ghPath" placeholder="e.g. assets/stories"><span class="hint">Folder for uploaded media. Leave empty for repo root.</span></div></div></div><div class="modal-footer"><button class="btn btn-danger btn-sm" id="ghDisconnect" style="display:none;">Disconnect</button><div class="modal-footer-right"><button class="btn btn-ghost" id="cancelGhBtn">Cancel</button><button class="btn btn-primary" id="saveGhBtn">Save &amp; Connect</button></div></div></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="image/*,video/mp4" style="display:none;">
+<input type="file" id="importInput" accept=".json,application/json" style="display:none;">
+<script>
+// ─── State ───
+let stories = [];
+let activeStoryIdx = -1;
+let editingPaneIdx = -1;
+let globalHeading = 'The Look Of The Games';
+let repoHtmlRaw = null;
+let repoFileSha = null;
+let ghConfig = JSON.parse(localStorage.getItem('ghConfig') || 'null');
+
+const $ = id => document.getElementById(id);
+const storyListEl = $('storyList');
+const editorArea = $('editorArea');
+const emptyState = $('emptyState');
+const paneModal = $('paneModal');
+const ghModal = $('ghModal');
+const toastEl = $('toast');
+const loadBar = $('loadingBar');
+
+let toastTimer;
+function showToast(msg, type = 'success') { clearTimeout(toastTimer); toastEl.textContent = msg; toastEl.className = 'toast show ' + type; toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3500); }
+function setLoading(pct) { loadBar.style.width = pct + '%'; }
+
+// ─── Parse stories.html source to extract heading + STORIES array ───
+function parseStoriesHtml(html) {
+  const headingMatch = html.match(/<h2>([^<]+)<\/h2>/);
+  const heading = headingMatch ? headingMatch[1].trim() : 'The Look Of The Games';
+  const startMarker = 'const STORIES = [';
+  const startIdx = html.indexOf(startMarker);
+  if (startIdx === -1) return null;
+  let depth = 0, inStr = false, strCh = '', endIdx = -1;
+  for (let i = startIdx + startMarker.length - 1; i < html.length; i++) {
+    const c = html[i];
+    if (inStr) { if (c === '\\') { i++; continue; } if (c === strCh) inStr = false; continue; }
+    if (c === "'" || c === '"' || c === '`') { inStr = true; strCh = c; continue; }
+    if (c === '[') depth++;
+    if (c === ']') { depth--; if (depth === 0) { endIdx = i + 1; break; } }
+  }
+  if (endIdx === -1) return null;
+  // Extract the raw JS array text and eval it safely
+  const rawJs = html.substring(startIdx, endIdx) + ';';
+  try {
+    const fn = new Function(rawJs + '\nreturn STORIES;');
+    return { heading, stories: fn() };
+  } catch (e) {
+    console.error('Parse failed:', e);
+    return null;
+  }
+}
+
+// ─── Fetch stories.html from GitHub repo ───
+async function fetchStoriesFromRepo() {
+  if (!ghConfig) return null;
+  try {
+    setLoading(20);
+    const branch = ghConfig.branch || 'main';
+    const baseUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html?ref=' + branch;
+    const authHeader = { 'Authorization': 'Bearer ' + ghConfig.token };
+
+    // Step 1: Get file metadata (JSON) to capture SHA
+    setLoading(30);
+    const metaResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3+json' } });
+    if (!metaResp.ok) { console.warn('Meta fetch failed:', metaResp.status); return null; }
+    const metaData = await metaResp.json();
+    repoFileSha = metaData.sha;
+    console.log('Got file SHA:', repoFileSha);
+
+    // Step 2: Decode content from the same response (base64 encoded)
+    setLoading(60);
+    let html;
+    if (metaData.content) {
+      html = decodeURIComponent(escape(atob(metaData.content.replace(/\n/g, ''))));
+    } else {
+      // Fallback: fetch raw if content wasn't included (file >1MB)
+      const rawResp = await fetch(baseUrl, { headers: { ...authHeader, 'Accept': 'application/vnd.github.v3.raw' } });
+      if (!rawResp.ok) return null;
+      html = await rawResp.text();
+    }
+
+    repoHtmlRaw = html;
+    setLoading(90);
+    return parseStoriesHtml(html);
+  } catch (e) { console.warn('Repo fetch error:', e); return null; }
+}
+
+// ─── Init ───
+async function init() {
+  updateGhBar();
+  if (ghConfig) {
+    showToast('Loading from ' + ghConfig.repo + '...', 'info');
+    const fromRepo = await fetchStoriesFromRepo();
+    if (fromRepo) {
+      stories = fromRepo.stories;
+      globalHeading = fromRepo.heading;
+      save();
+      showToast('Loaded ' + stories.length + ' stories from repo');
+    } else {
+      loadFromLocalStorage();
+      showToast('Could not fetch repo — using local data', 'error');
+    }
+  } else { loadFromLocalStorage(); }
+  setLoading(100);
+  setTimeout(() => loadBar.style.display = 'none', 400);
+  $('globalHeading').value = globalHeading;
+  renderStoryList();
+  if (stories.length > 0) selectStory(0); else showEmpty();
+}
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('storiesConfig');
+  if (saved) try { const d = JSON.parse(saved); stories = d.stories || []; globalHeading = d.heading || globalHeading; } catch(e) { stories = []; }
+}
+function save() { localStorage.setItem('storiesConfig', JSON.stringify({ heading: globalHeading, stories })); }
+
+// ─── Story List + DnD ───
+let dragStoryIdx = null;
+function renderStoryList() {
+  storyListEl.innerHTML = stories.map((s, i) => {
+    const th = s.thumb || (s.slides && s.slides[0] && !s.slides[0].type ? s.slides[0].image : '');
+    return '<div class="story-item' + (i === activeStoryIdx ? ' active' : '') + '" data-idx="' + i + '" draggable="true">' +
+      '<div class="story-item-drag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></div>' +
+      (th ? '<img class="story-item-thumb" src="' + th + '" loading="lazy">' : '<div class="story-item-thumb"></div>') +
+      '<div class="story-item-info"><div class="story-item-title">' + (s.title || 'Untitled') + '</div><div class="story-item-meta">' + (s.slides||[]).length + ' pane' + ((s.slides||[]).length !== 1 ? 's' : '') + '</div></div></div>';
+  }).join('');
+  storyListEl.querySelectorAll('.story-item').forEach(el => {
+    const idx = +el.dataset.idx;
+    el.addEventListener('click', e => { if (!e.target.closest('.story-item-drag')) selectStory(idx); });
+    el.addEventListener('dragstart', e => { dragStoryIdx = idx; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', idx); });
+    el.addEventListener('dragend', () => { el.classList.remove('dragging'); storyListEl.querySelectorAll('.story-item').forEach(x => x.classList.remove('drag-over-above','drag-over-below')); dragStoryIdx = null; });
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const r = el.getBoundingClientRect(); el.classList.toggle('drag-over-above', e.clientY < r.top + r.height/2); el.classList.toggle('drag-over-below', e.clientY >= r.top + r.height/2); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over-above','drag-over-below'));
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('drag-over-above','drag-over-below');
+      const from = dragStoryIdx; if (from === null) return;
+      const r = el.getBoundingClientRect(); let to = idx;
+      if (e.clientY >= r.top + r.height/2 && to < stories.length - 1) to++;
+      if (from === to) return;
+      const [moved] = stories.splice(from, 1);
+      stories.splice(to > from ? to - 1 : to, 0, moved);
+      if (activeStoryIdx === from) activeStoryIdx = to > from ? to - 1 : to;
+      else if (from < activeStoryIdx && to >= activeStoryIdx) activeStoryIdx--;
+      else if (from > activeStoryIdx && to <= activeStoryIdx) activeStoryIdx++;
+      save(); renderStoryList();
+    });
+  });
+}
+function selectStory(idx) { activeStoryIdx = idx; renderStoryList(); renderEditor(); emptyState.style.display = 'none'; editorArea.style.display = 'block'; $('mainTitle').textContent = stories[idx].title || 'Untitled Story'; }
+function showEmpty() { emptyState.style.display = ''; editorArea.style.display = 'none'; $('mainTitle').textContent = 'Stories Configurator'; }
+function addStory() { stories.push({ id: 'story-' + Date.now(), title: 'New Story', subtitle: '', avatar: '', thumb: '', slides: [] }); save(); selectStory(stories.length - 1); renderStoryList(); showToast('Story created'); }
+function deleteStory(idx) { if (!confirm('Delete "' + stories[idx].title + '"?')) return; stories.splice(idx, 1); save(); if (!stories.length) { activeStoryIdx = -1; showEmpty(); } else selectStory(Math.min(idx, stories.length - 1)); renderStoryList(); showToast('Story deleted'); }
+
+// ─── Editor + Pane DnD ───
+let dragPaneIdx = null;
+function renderEditor() {
+  if (activeStoryIdx < 0) return;
+  const s = stories[activeStoryIdx];
+  editorArea.innerHTML =
+    '<div class="editor-section"><div class="editor-section-header"><h3>Story Details</h3><button class="btn btn-danger btn-sm" onclick="deleteStory(' + activeStoryIdx + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete Story</button></div>' +
+    '<div class="field-group"><div class="field"><label>Title</label><input type="text" id="ed_title" value="' + esc(s.title) + '" placeholder="Story title"></div><div class="field"><label>Subtitle</label><input type="text" id="ed_subtitle" value="' + esc(s.subtitle) + '" placeholder="Optional subtitle"></div></div>' +
+    '<div class="field-group"><div class="field"><label>Card Thumbnail URL</label><input type="text" id="ed_thumb" value="' + esc(s.thumb) + '" placeholder="Image URL for card"><span class="hint">Leave empty to auto-use first pane image</span></div><div class="field"><label>Story ID</label><input type="text" id="ed_id" value="' + esc(s.id) + '" placeholder="unique-id"></div></div></div>' +
+    '<div class="editor-section"><div class="editor-section-header"><h3>Panes <span class="count">' + (s.slides||[]).length + ' slide' + ((s.slides||[]).length !== 1 ? 's' : '') + '</span></h3><button class="btn btn-primary btn-sm" onclick="openPaneModal(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Pane</button></div>' +
+    '<div class="pane-grid" id="paneGrid">' + (s.slides||[]).map((sl, i) => renderPaneCard(sl, i, s.slides.length)).join('') +
+    '<div class="pane-add-card" onclick="openPaneModal(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Pane</div></div></div>';
+  ['ed_title','ed_subtitle','ed_thumb','ed_id'].forEach(id => $(id).addEventListener('input', debounce(() => saveStoryDetails(), 400)));
+  setupPaneDragDrop();
+}
+function renderPaneCard(sl, i, total) {
+  const isVid = sl.type === 'video', src = isVid ? '' : sl.image;
+  return '<div class="pane-card" data-pane="' + i + '" draggable="true"><span class="pane-card-number">' + (i+1) + '</span>' +
+    (isVid ? '<span class="pane-card-video-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>Video</span>' : '') +
+    (src ? '<img class="pane-card-media" src="' + src + '" loading="lazy">' : '<div class="pane-card-media" style="display:flex;align-items:center;justify-content:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca0b4" stroke-width="1.5"><polygon points="5 3 19 12 5 21"/></svg></div>') +
+    '<div class="pane-card-info"><div class="pane-card-title">' + (sl.product || sl.label || 'Untitled') + '</div><div class="pane-card-sub">' + (sl.price || sl.label || '') + '</div></div>' +
+    '<div class="pane-card-actions">' +
+    (i > 0 ? '<button class="pane-action-btn" title="Move left" onclick="event.stopPropagation();movePane(' + i + ',-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>' : '') +
+    (i < total-1 ? '<button class="pane-action-btn" title="Move right" onclick="event.stopPropagation();movePane(' + i + ',1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>' : '') +
+    '</div></div>';
+}
+function setupPaneDragDrop() {
+  const grid = $('paneGrid'); if (!grid) return;
+  grid.querySelectorAll('.pane-card[data-pane]').forEach(card => {
+    const idx = +card.dataset.pane;
+    card.addEventListener('click', e => { if (!e.target.closest('.pane-action-btn')) openPaneModal(idx); });
+    card.addEventListener('dragstart', e => { dragPaneIdx = idx; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'pane-' + idx); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); grid.querySelectorAll('.pane-card').forEach(c => c.classList.remove('drag-over')); dragPaneIdx = null; });
+    card.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragPaneIdx !== null && dragPaneIdx !== idx) card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => { e.preventDefault(); card.classList.remove('drag-over'); if (dragPaneIdx === null || dragPaneIdx === idx) return; const s = stories[activeStoryIdx]; const [moved] = s.slides.splice(dragPaneIdx, 1); s.slides.splice(idx, 0, moved); save(); renderEditor(); showToast('Moved to position ' + (idx+1)); });
+  });
+}
+function saveStoryDetails() {
+  if (activeStoryIdx < 0) return; const s = stories[activeStoryIdx];
+  s.title = $('ed_title').value; s.subtitle = $('ed_subtitle').value; s.thumb = $('ed_thumb').value; s.id = $('ed_id').value;
+  if (s.thumb) s.avatar = s.thumb;
+  save(); renderStoryList(); $('mainTitle').textContent = s.title || 'Untitled Story';
+}
+function movePane(idx, dir) { const s = stories[activeStoryIdx]; const t = idx + dir; if (t < 0 || t >= s.slides.length) return; [s.slides[idx], s.slides[t]] = [s.slides[t], s.slides[idx]]; save(); renderEditor(); }
+
+// ─── Pane Modal ───
+function openPaneModal(idx) {
+  editingPaneIdx = idx; const isNew = idx === -1;
+  const slide = isNew ? { image: '', label: '', product: '', price: '', cta: 'Shop Now', link: '', duration: 5000 } : { ...stories[activeStoryIdx].slides[idx] };
+  $('paneModalTitle').textContent = isNew ? 'Add Pane' : 'Edit Pane ' + (idx + 1);
+  $('deletePaneBtn').style.display = isNew ? 'none' : '';
+  const isVid = slide.type === 'video', mediaSrc = isVid ? slide.src : slide.image;
+  $('paneModalBody').innerHTML =
+    '<div class="tabs"><button class="tab' + (!isVid ? ' active' : '') + '" onclick="switchMediaType(\'image\')">Image</button><button class="tab' + (isVid ? ' active' : '') + '" onclick="switchMediaType(\'video\')">Video</button></div>' +
+    '<input type="hidden" id="pm_type" value="' + (isVid ? 'video' : 'image') + '">' +
+    (mediaSrc ? '<div class="upload-preview" id="mediaPreview">' + (isVid ? '<video src="' + mediaSrc + '" style="width:100%;max-height:220px;" controls muted></video>' : '<img src="' + mediaSrc + '">') + '<button class="remove-preview" onclick="clearMediaPreview()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' : '<div id="mediaPreview"></div>') +
+    '<div class="upload-area" id="uploadArea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p>Drop file or click to upload</p><span class="or">&mdash; or enter URL below &mdash;</span></div>' +
+    '<div class="field-group full" style="margin-top:4px;"><div class="field"><label>Media URL</label><input type="text" id="pm_src" value="' + esc(mediaSrc) + '" placeholder="https://..."><span class="hint">' + (ghConfig ? 'Uploads go to GitHub automatically' : 'Paste URL or connect GitHub') + '</span></div></div>' +
+    '<div class="field-group"><div class="field"><label>Label</label><input type="text" id="pm_label" value="' + esc(slide.label) + '"></div><div class="field"><label>Product Name</label><input type="text" id="pm_product" value="' + esc(slide.product) + '"></div></div>' +
+    '<div class="field-group"><div class="field"><label>Price</label><input type="text" id="pm_price" value="' + esc(slide.price || '') + '" placeholder="optional"></div><div class="field"><label>CTA Text</label><input type="text" id="pm_cta" value="' + esc(slide.cta || 'Shop Now') + '"></div></div>' +
+    '<div class="field-group full"><div class="field"><label>Link URL</label><input type="text" id="pm_link" value="' + esc(slide.link || '') + '" placeholder="https://..."></div></div>' +
+    '<div class="field-group"><div class="field"><label>Duration (ms)</label><input type="number" id="pm_duration" value="' + (slide.duration || 5000) + '" min="1000" step="500"><span class="hint">Videos default to 10000ms</span></div></div>';
+  setupUploadArea(); paneModal.classList.add('open');
+}
+function switchMediaType(type) { $('pm_type').value = type; $('paneModalBody').querySelectorAll('.tab').forEach(t => t.classList.remove('active')); $('paneModalBody').querySelectorAll('.tab')[type === 'image' ? 0 : 1].classList.add('active'); if (type === 'video') $('pm_duration').value = 10000; }
+function clearMediaPreview() { $('mediaPreview').innerHTML = ''; $('pm_src').value = ''; }
+function closePaneModal() { paneModal.classList.remove('open'); }
+function savePaneData() {
+  const type = $('pm_type').value, src = $('pm_src').value;
+  if (!src) { showToast('Add a media URL', 'error'); return; }
+  const slide = { label: $('pm_label').value, product: $('pm_product').value, cta: $('pm_cta').value, duration: parseInt($('pm_duration').value) || 5000 };
+  const price = $('pm_price').value; if (price) slide.price = price;
+  const link = $('pm_link').value; if (link) slide.link = link;
+  if (type === 'video') { slide.type = 'video'; slide.src = src; } else { slide.image = src; }
+  const s = stories[activeStoryIdx];
+  if (editingPaneIdx === -1) s.slides.push(slide); else s.slides[editingPaneIdx] = slide;
+  if (!s.thumb && s.slides.length > 0 && s.slides[0].image) { s.thumb = s.slides[0].image; s.avatar = s.slides[0].image; }
+  save(); closePaneModal(); renderEditor(); renderStoryList();
+  showToast(editingPaneIdx === -1 ? 'Pane added' : 'Pane updated');
+}
+function deletePane() { if (editingPaneIdx < 0) return; if (!confirm('Delete this pane?')) return; stories[activeStoryIdx].slides.splice(editingPaneIdx, 1); save(); closePaneModal(); renderEditor(); renderStoryList(); showToast('Pane deleted'); }
+
+// ─── Upload ───
+function setupUploadArea() {
+  const area = $('uploadArea'); if (!area) return;
+  area.addEventListener('click', () => { const fi = $('fileInput'); fi.accept = $('pm_type').value === 'video' ? 'video/mp4' : 'image/*'; fi.onchange = async e => { if (e.target.files[0]) await handleFileUpload(e.target.files[0]); }; fi.click(); });
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
+  area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+  area.addEventListener('drop', async e => { e.preventDefault(); area.classList.remove('dragover'); if (e.dataTransfer.files[0]) await handleFileUpload(e.dataTransfer.files[0]); });
+}
+async function handleFileUpload(file) {
+  const isVid = file.type.startsWith('video'); if (isVid) switchMediaType('video'); else switchMediaType('image');
+  if (ghConfig) {
+    showToast('Uploading to GitHub...', 'info');
+    try { const url = await uploadToGitHub(file); $('pm_src').value = url; updateMediaPreview(url, isVid); showToast('Uploaded'); }
+    catch (e) { showToast('Upload failed: ' + e.message, 'error'); }
+  } else {
+    const reader = new FileReader();
+    reader.onload = () => { updateMediaPreview(reader.result, isVid); showToast('Connect GitHub first', 'error'); };
+    reader.readAsDataURL(file);
+  }
+}
+function updateMediaPreview(src, isVid) {
+  $('mediaPreview').innerHTML = '<div class="upload-preview">' + (isVid ? '<video src="' + src + '" style="width:100%;max-height:220px;" controls muted></video>' : '<img src="' + src + '">') + '<button class="remove-preview" onclick="clearMediaPreview()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+}
+
+// ─── GitHub API ───
+async function ghApiFetch(path, opts = {}) {
+  if (!ghConfig) throw new Error('Not configured');
+  const resp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/' + path, { headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Content-Type': 'application/json', ...opts.headers }, ...opts });
+  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + resp.status); }
+  return resp.json();
+}
+async function uploadToGitHub(file) {
+  const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+  const filePath = ghConfig.path ? ghConfig.path + '/' + file.name : file.name;
+  let sha;
+  try {
+    const shaResp = await fetch('https://api.github.com/repos/' + ghConfig.repo + '/contents/' + encodeURIComponent(filePath) + '?ref=' + (ghConfig.branch || 'main'), {
+      headers: { 'Authorization': 'Bearer ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (shaResp.ok) { const shaData = await shaResp.json(); sha = shaData.sha; }
+  } catch(e) {}
+  const body = { message: 'Upload ' + file.name, content: base64, branch: ghConfig.branch || 'main' };
+  if (sha) body.sha = sha;
+  const data = await ghApiFetch('contents/' + encodeURIComponent(filePath), { method: 'PUT', body: JSON.stringify(body) });
+  return data.content.download_url;
+}
+
+// ─── Build & Publish ───
+function buildStoriesJs() {
+  return 'const STORIES = ' + JSON.stringify(stories, (k, v) => v === null ? undefined : v, 2)
+    .replace(/"(\w+)":/g, '$1:')
+    .replace(/"/g, "'") + ';';
+}
+function buildFullHtml(template) {
+  let html = template.replace(/(<h2>)[^<]*(<\/h2>)/, '$1' + globalHeading + '$2');
+  const startMarker = 'const STORIES = [';
+  const si = html.indexOf(startMarker);
+  if (si === -1) return html;
+  let depth = 0, inStr = false, strCh = '', ei = -1;
+  for (let i = si + startMarker.length - 1; i < html.length; i++) {
+    const c = html[i];
+    if (inStr) { if (c === '\\') { i++; continue; } if (c === strCh) inStr = false; continue; }
+    if (c === "'" || c === '"' || c === '`') { inStr = true; strCh = c; continue; }
+    if (c === '[') depth++;
+    if (c === ']') { depth--; if (depth === 0) { ei = i; break; } }
+  }
+  if (ei === -1) return html;
+  let semi = ei + 1; while (semi < html.length && html[semi] !== ';') semi++;
+  return html.substring(0, si) + buildStoriesJs() + html.substring(semi + 1);
+}
+async function publishToGitHub() {
+  if (!ghConfig) { openGhModal(); showToast('Connect GitHub first', 'error'); return; }
+  const btn = $('publishBtn'), orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Publishing...'; btn.disabled = true;
+  try {
+    const branch = ghConfig.branch || 'main';
+    const apiUrl = 'https://api.github.com/repos/' + ghConfig.repo + '/contents/stories.html';
+    const headers = { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+    // If we don't have the template, fetch it
+    if (!repoHtmlRaw) {
+      const rawResp = await fetch(apiUrl + '?ref=' + branch, { headers: { 'Authorization': 'token ' + ghConfig.token, 'Accept': 'application/vnd.github.v3.raw' } });
+      if (rawResp.ok) repoHtmlRaw = await rawResp.text();
+      else throw new Error('stories.html not found in repo — push one first');
+    }
+
+    const html = buildFullHtml(repoHtmlRaw);
+    const base64 = btoa(unescape(encodeURIComponent(html)));
+
+    // Step 1: Delete existing file (need SHA first)
+    const metaResp = await fetch(apiUrl + '?ref=' + branch, { headers });
+    if (metaResp.ok) {
+      const meta = await metaResp.json();
+      await fetch(apiUrl, { method: 'DELETE', headers, body: JSON.stringify({ message: 'Remove stories.html for update', sha: meta.sha, branch }) });
+    }
+
+    // Step 2: Create fresh file
+    const createResp = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify({ message: 'Update stories — ' + new Date().toLocaleString(), content: base64, branch }) });
+    if (!createResp.ok) { const err = await createResp.json().catch(() => ({})); throw new Error(err.message || 'HTTP ' + createResp.status); }
+
+    repoHtmlRaw = html;
+    showToast('Published stories.html ✓');
+  } catch(e) { showToast('Publish failed: ' + e.message, 'error'); console.error(e); }
+  btn.innerHTML = orig; btn.disabled = false;
+}
+
+// ─── GitHub Settings ───
+function openGhModal() {
+  if (ghConfig) { $('ghToken').value = ghConfig.token; $('ghRepo').value = ghConfig.repo; $('ghBranch').value = ghConfig.branch || 'main'; $('ghPath').value = ghConfig.path || ''; $('ghDisconnect').style.display = ''; }
+  else { $('ghToken').value = ''; $('ghRepo').value = ''; $('ghBranch').value = 'main'; $('ghPath').value = ''; $('ghDisconnect').style.display = 'none'; }
+  ghModal.classList.add('open');
+}
+function closeGhModal() { ghModal.classList.remove('open'); }
+async function saveGhSettings() {
+  const token = $('ghToken').value.trim(), repo = $('ghRepo').value.trim();
+  if (!token || !repo) { showToast('Token and repo required', 'error'); return; }
+  ghConfig = { token, repo, branch: $('ghBranch').value.trim() || 'main', path: $('ghPath').value.trim() };
+  localStorage.setItem('ghConfig', JSON.stringify(ghConfig));
+  updateGhBar(); closeGhModal();
+  showToast('Connected — loading stories...', 'info');
+  const fromRepo = await fetchStoriesFromRepo();
+  if (fromRepo) {
+    stories = fromRepo.stories; globalHeading = fromRepo.heading;
+    $('globalHeading').value = globalHeading; save(); renderStoryList();
+    if (stories.length) selectStory(0);
+    showToast('Loaded ' + stories.length + ' stories from repo ✓');
+  } else { showToast('Connected but no stories.html found', 'info'); }
+  setLoading(100); setTimeout(() => loadBar.style.display = 'none', 400);
+}
+function disconnectGh() { ghConfig = null; repoHtmlRaw = null; repoFileSha = null; localStorage.removeItem('ghConfig'); updateGhBar(); closeGhModal(); showToast('Disconnected'); }
+function updateGhBar() { const c = !!ghConfig; $('ghDot').className = 'dot' + (c ? ' connected' : ''); $('ghLabel').textContent = c ? ghConfig.repo : 'GitHub not connected'; }
+
+// ─── Export / Import ───
+function exportJson() { dl(new Blob([JSON.stringify({ heading: globalHeading, stories }, null, 2)], { type: 'application/json' }), 'stories-config.json'); showToast('JSON exported'); }
+function importJson() { $('importInput').click(); }
+$('importInput').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { try { const d = JSON.parse(reader.result); if (d.stories) { stories = d.stories; globalHeading = d.heading || globalHeading; $('globalHeading').value = globalHeading; save(); renderStoryList(); if (stories.length) selectStory(0); showToast('Imported ' + stories.length + ' stories'); } } catch(err) { showToast('Invalid JSON', 'error'); } };
+  reader.readAsText(file); e.target.value = '';
+});
+function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); }
+
+// ─── Utilities ───
+function esc(str) { return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// ─── Events ───
+$('addStoryBtn').addEventListener('click', addStory);
+$('emptyAddBtn').addEventListener('click', addStory);
+$('globalHeading').addEventListener('input', debounce(() => { globalHeading = $('globalHeading').value; save(); }, 500));
+$('closePaneModal').addEventListener('click', closePaneModal);
+$('cancelPaneBtn').addEventListener('click', closePaneModal);
+$('savePaneBtn').addEventListener('click', savePaneData);
+$('deletePaneBtn').addEventListener('click', deletePane);
+$('ghSettingsBtn').addEventListener('click', openGhModal);
+$('closeGhModal').addEventListener('click', closeGhModal);
+$('cancelGhBtn').addEventListener('click', closeGhModal);
+$('saveGhBtn').addEventListener('click', saveGhSettings);
+$('ghDisconnect').addEventListener('click', disconnectGh);
+$('exportJsonBtn').addEventListener('click', exportJson);
+$('publishBtn').addEventListener('click', publishToGitHub);
+$('importBtn').addEventListener('click', importJson);
+paneModal.addEventListener('click', e => { if (e.target === paneModal) closePaneModal(); });
+ghModal.addEventListener('click', e => { if (e.target === ghModal) closeGhModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePaneModal(); closeGhModal(); } });
+
+init();
+</script>
+</body>
+</html>
